@@ -1,7 +1,7 @@
-import logger_formatter as LoggerFormatter
-from logger_formatter import get_logger
-from file_utils import read_file, write_file
+from . import logger_formatter as LoggerFormatter, file_utils
+read_file = file_utils.read_file
+write_file = file_utils.write_file
+get_logger = LoggerFormatter.get_logger
 
 
-__version__ = '0.1.0'
 __all__ = ['LoggerFormatter', 'get_logger', 'read_file', 'write_file']

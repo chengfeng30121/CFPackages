@@ -10,7 +10,7 @@ authors = [
 ]
 description = "一个供我自己使用的实用的 python 第三方库"
 readme = "README.md"
-license = {text = "MIT"}
+license-files = ["LICENSE"]
 requires-python = ">=3.6"
 dependencies = [
     "colorama"
