@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cfpackages"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
     {name = "chengfeng3012", email = "chengfeng3012@163.com"},
 ]
@@ -13,5 +13,7 @@ readme = "README.md"
 license-files = ["LICENSE"]
 requires-python = ">=3.6"
 dependencies = [
-    "colorama"
+    "colorama",
+    "prompt_toolkit",
+    "questionary"
 ]
