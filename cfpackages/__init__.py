@@ -7,7 +7,7 @@ try:
 except PackageNotFoundError:
     __version__ = "-1"
 
-if os.environ.get("cfpackages.check_update", 1).isdigit():
+if os.environ.get("cfpackages.check_update", "1").isdigit():
     __check_update__ = bool(int(os.environ.get("cfpackages.check_update", 1)))
 elif os.environ.get("cfpackages.check_update", "true").lower() == "false":
     __check_update__ = False
