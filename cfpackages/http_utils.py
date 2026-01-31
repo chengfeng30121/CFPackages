@@ -33,14 +33,17 @@ def generate_headers(raw_text: str, exclude_keys: Optional[list] = []):
             else:
                 mode = False
         if mode:
-            key, value = line.split(':', 1)
-            headers[format_key(key.strip())] = value.strip()
+            words = line.split(':')
+            key = words[0]
+            value = ':'.join(words[1:])
+            if not key.strip() or not value.strip(): continue
+            headers[format_key(key.strip(), exclude_keys)] = value.strip()
         else:
             match len(temp):
                 case 0:
                     temp.append(line.strip())
                 case 1:
-                    headers[format_key(temp[0])] = line
+                    headers[format_key(temp[0], exclude_keys)] = line
                     temp = []
                 case _:
                     temp = []

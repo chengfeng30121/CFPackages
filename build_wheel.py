@@ -58,11 +58,13 @@ if __name__ == "__main__":
             build_package()
             # upload_package()
             upload_test_package()
+            clean_build()
         case "ALL (production)":
             clean_build()
             build_package()
             upload_package()
             # upload_test_package()
+            clean_build()
         case "Build Package":
             build_package()
         case "Clean Build":
