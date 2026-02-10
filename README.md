@@ -4,6 +4,7 @@
 1. [colorama](https://pypi.org/project/colorama/)
 2. [prompt_toolkit](https://pypi.org/project/prompt-toolkit/)
 3. [questions](https://pypi.org/project/questionary/)
+4. [requests](https://pypi.org/project/requests/)
 ## 使用
 1. 安装 
     ``` bash

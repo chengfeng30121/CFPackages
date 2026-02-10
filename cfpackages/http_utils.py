@@ -11,10 +11,7 @@ special_keys = ["WWW-Authenticate", "ETag", "Expect-CT", "TE", "SourceMap", "Acc
                 "Sec-CH-UA-Mobile", "Sec-CH-UA-Model", "Sec-CH-UA-Platform", "Sec-CH-UA-Platform-Version", 
                 "Sec-CH-UA-WoW64"] # From https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Reference/Headers
 # logger = get_logger()
-class logger: # Warning: you should replace this with your own logger.
-              # Replace by monkey patching.
-    def __getattr__(self, name):
-        print(name)
+logger = None # Warning: you should replace this with your own logger. Replace it by monkey patching.
 
 
 def format_key(key: str, exclude_keys: Optional[list] = []):
@@ -72,13 +69,16 @@ def get_headers_from_user_input():
 
 def request(method: Literal["GET", "OPTIONS", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
             url: str, **kwargs) -> requests.models.Response:
-    retry = kwargs.get('retry', 0)
+    retry = kwargs.pop('retry', 0)
     try:
         return requests.request(method, url, **kwargs)
-    except:
+    except Exception as e:
         if retry >= 3:
-            raise Exception(f'Can\'t to request, please check your network connection.')
-        logger.error(f'Network error, retrying {retry+1}/3. Waiting for 3 seconds...')
+            raise Exception(f'Can\'t to request, please check your network connection.') from e
+        if logger:
+            logger.error(f'Network error, retrying {retry+1}/3. Waiting for 3 seconds...')
+        else:
+            print(f'Network error, retrying {retry+1}/3. Waiting for 3 seconds...')
         time.sleep(3)
         return request(method, url, **kwargs, retry=retry+1)
 

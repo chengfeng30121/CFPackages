@@ -13,6 +13,7 @@ try:
     import build
 except ImportError:
     print(f"Please install the `build` package")
+    exit(1)
 
 import subprocess
 import shutil
