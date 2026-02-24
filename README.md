@@ -5,6 +5,7 @@
 2. [prompt_toolkit](https://pypi.org/project/prompt-toolkit/)
 3. [questions](https://pypi.org/project/questionary/)
 4. [requests](https://pypi.org/project/requests/)
+5. [pywin32](https://pypi.org/project/pywin32/) (Windows 系统下使用)
 ## 使用
 1. 安装 
     ``` bash
