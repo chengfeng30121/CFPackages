@@ -14,9 +14,15 @@ try:
 except ImportError:
     print(f"Please install the `build` package")
     exit(1)
+try:
+    import twine
+except ImportError:
+    print(f"Please install the `twine` package")
+    exit(1)
 
 import subprocess
 import shutil
+import os
 
 def build_package():
     """Builds the package"""
@@ -29,6 +35,7 @@ def clean_build():
     shutil.rmtree("dist", ignore_errors=True)
     shutil.rmtree("cfpackages.egg-info", ignore_errors=True)
     shutil.rmtree("cfpackages/__pycache__", ignore_errors=True)
+    if os.path.isfile("cfpackages/last_check_update"): os.remove("cfpackages/last_check_update")
 
 def upload_package():
     """Uploads the package to PyPI"""

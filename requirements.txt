@@ -1,1 +1,5 @@
 colorama
+prompt_toolkit
+questionary
+requests
+pywin32; sys_platform == 'win32'

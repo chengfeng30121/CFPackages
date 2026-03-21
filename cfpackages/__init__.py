@@ -1,19 +1,39 @@
 from . import file_utils, http_utils, logger_formatter, text_ui
 from importlib.metadata import version, PackageNotFoundError
+from pathlib import Path
 import os
+import sys
+import time
+
+__all__ = ["file_utils", "http_utils", "logger_formatter", "text_ui", "__version__", "__check_update__"]
+
+if sys.platform == "win32":
+    from . import win_utils
+    __all__.append("win_utils")
+else:
+    from . import unix_utils
+    __all__.append("unix_utils")
 
 try:
     __version__ = version("cfpackages")
 except PackageNotFoundError:
     __version__ = "-1"
 
-if os.environ.get("cfpackages.check_update", "1").isdigit():
-    __check_update__ = bool(int(os.environ.get("cfpackages.check_update", 1)))
-elif os.environ.get("cfpackages.check_update", "true").lower() == "false":
-    __check_update__ = False
-else:
-    __check_update__ = True
-__all__ = ["file_utils", "http_utils", "logger_formatter", "text_ui", "__version__", "__check_update__"]
+def judge_check_update():
+    if __version__ == "-1":
+        return False
+    elif os.environ.get("cfpackages.check_update", "true").lower() == "false":
+        return False
+    last_check_update = Path(__file__).parent / "last_check_update"
+    if not last_check_update.exists():
+        return True
+    last_time = last_check_update.read_text()
+    if int(time.time()) - int(last_time) > 60*10:
+        return True
+    if os.environ.get("cfpackages.check_update", "a") in ["0", "1"]:
+        return bool(os.environ.get("cfpackages.check_update", "1"))
+    return False
+
 
 def _check_update():
     import http.client
@@ -59,6 +79,9 @@ def _check_update():
             logger.warning(f"New version of cfpackages available: {str_version}")
             logger.warning(f"Please update to the latest version to get the latest features and bug fixes.")
             logger.warning(f"You can update by running `pip install cfpackages --upgrade`")
+            return
+        try: Path(__file__).parent.joinpath("last_check_update").write_text(str(int(time.time())))
+        except: pass
     except json.JSONDecodeError as e:
         logger.warning(f"Can't to decode response info, Error Message: {e}")
         logger.warning(f"NOTE: If you don't want to check for updates, please set `__check_update__` to False.")
@@ -70,5 +93,6 @@ def _check_update():
     finally:
         connection.close()
 
-if __check_update__:
+
+if judge_check_update():
     _check_update()

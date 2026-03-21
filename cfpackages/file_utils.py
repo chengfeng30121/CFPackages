@@ -1,14 +1,14 @@
 
-def read_file(path):
-    with open(path, 'r', encoding="utf-8") as f:
+def read_file(path, encoding="utf-8"):
+    with open(path, 'r', encoding=encoding) as f:
         return f.read()
 
-def write_file(path, content):
-    with open(path, 'w', encoding="utf-8") as f:
+def write_file(path, content, encoding="utf-8"):
+    with open(path, 'w', encoding=encoding) as f:
         f.write(content)
 
-def append_file(path, content):
-    with open(path, 'a', encoding="utf-8") as f:
+def append_file(path, content, encoding="utf-8"):
+    with open(path, 'a', encoding=encoding) as f:
         f.write(content)
 
 def read_bytes(path):

@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cfpackages"
-version = "0.1.4.r1"
+version = "0.1.4"
 authors = [
     {name = "chengfeng3012", email = "chengfeng3012@163.com"},
 ]
 description = "一个供我自己使用的实用的 python 第三方库"
 readme = "README.md"
 license-files = ["LICENSE"]
-requires-python = ">=3.6"
+requires-python = ">=3.9"
 dependencies = [
     "colorama",
     "prompt_toolkit",
