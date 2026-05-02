@@ -65,7 +65,7 @@ def _check_update():
                 return False
         return False
 
-    connection = http.client.HTTPSConnection("pypi.org")
+    connection = http.client.HTTPSConnection("pypi.org", timeout=3)
     try:
         connection.request("GET", "/pypi/cfpackages/json")
         response = connection.getresponse()
@@ -96,3 +96,4 @@ def _check_update():
 
 if judge_check_update():
     _check_update()
+cu = _check_update
