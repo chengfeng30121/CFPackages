@@ -96,4 +96,3 @@ def _check_update():
 
 if judge_check_update():
     _check_update()
-cu = _check_update
