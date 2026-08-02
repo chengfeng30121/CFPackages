@@ -21,14 +21,14 @@
     ```
 4. 取消更新提示
     ``` bash
-    export cfpackages.check_update=False
-    # or
     export cfpackages.check_update=0
+    # or
+    export cfpackages.check_update=false
     ```
     或 Windows 下
     ``` cmd
-    set cfpackages.check_update=False
-    REM or
     set cfpackages.check_update=0
+    REM or
+    set cfpackages.check_update=false
     ```
-    或者直接打开 `cfpackages/__init__.py`, 修改脚本, 将尾部的 `if` 代码块删除.
+    设置 `1` 或 `true` 可强制每次导入都检查（默认 24 小时内最多检查一次，检查在后台线程进行，不会阻塞导入）。

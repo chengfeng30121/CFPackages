@@ -4,114 +4,121 @@ from prompt_toolkit.layout import Layout, Window
 from prompt_toolkit.styles import Style
 from prompt_toolkit.layout.controls import FormattedTextControl
 from typing import List, Optional, Tuple
+import warnings
 import questionary
 
 
-languages = {
-    "zh": [
-        "请选择",
-        "空格: 选择/取消  方向键: 移动  Enter: 确认选择",
-        "未选择",
-        "按 Enter 确认选择  按 ESC 返回修改",
-        "(使用箭头选择)"
-    ],
-    "en": [
-        "Please choose:",
-        "Space: Select/Unselect  Arrow: Move  Enter: Confirm",
-        "Not selected",
-        "Press Enter to confirm selection  Press ESC to back",
-        "(use arrow keys to choose)"
-    ]
-}
-language = languages["zh"]
+def _normalize_options(options: list) -> list:
+    """统一为 `(text, key)` 二元组列表：字符串元素以自身作为 text 和 key。"""
+    normalized = []
+    for opt in options:
+        if isinstance(opt, str):
+            normalized.append((opt, opt))
+        else:
+            normalized.append((opt[0], opt[1]))
+    return normalized
 
 
-def checkbox_selection(options: list, title: Optional[str] = language[0]) -> list:
-    selected = [False] * len(options)
+def multi_select(options: list, title: Optional[str] = None) -> Optional[list]:
+    """复选列表选择，返回选中的 key 列表；ESC 取消时返回 None。
+
+    `options` 接受字符串列表（`["选项 a"]`）或 `(text, key)` 二元组列表。
+    空格: 选择/取消  方向键: 移动  Enter: 确认  ESC: 取消
+    """
+    normalized = _normalize_options(options)
+    if not normalized:
+        return []
+    title = title or "请选择"
+    keys = [key for _, key in normalized]
+    texts = [text for text, _ in normalized]
+    selected = [False] * len(normalized)
     pointer = 0
-    show_options = True
     kb = KeyBindings()
 
     @kb.add('down')
     def move_down(event) -> None:
         nonlocal pointer
-        if show_options:
-            pointer = (pointer + 1) % len(options)
+        pointer = (pointer + 1) % len(normalized)
 
     @kb.add('up')
     def move_up(event) -> None:
         nonlocal pointer
-        if show_options:
-            pointer = (pointer - 1) % len(options)
+        pointer = (pointer - 1) % len(normalized)
 
     @kb.add('space')
     def toggle_selection(event) -> None:
-        if show_options:
-            selected[pointer] = not selected[pointer]
+        selected[pointer] = not selected[pointer]
 
     @kb.add('enter')
-    def accept(event) -> None:
-        nonlocal show_options
-        if show_options:
-            show_options = False
-        else:
-            event.app.exit()
+    def confirm(event) -> None:
+        event.app.exit([keys[i] for i in range(len(keys)) if selected[i]])
 
     @kb.add('escape')
-    def back_to_selection(event) -> None:
-        nonlocal show_options
-        if not show_options:
-            show_options = True
+    def cancel(event) -> None:
+        event.app.exit(None)
 
     def get_text() -> List[Tuple[str, str]]:
-        selected_items = [options[i][1] for i in range(len(options)) if selected[i]]
-        if show_options:
-            result = []
-            result.append(('', f"{title}:\n"))
-
-            for i, (key, text) in enumerate(options):
-                if selected[i]:
-                    style = '#ffff00'
-                else:
-                    style = ''
-
-                if i == pointer:
-                    style += ' reverse'
-
-                result.append((style, f"  {text}\n"))
-
-            result.append(('\n', language[1]))
-            return result
-        else:
-            selected_text = ", ".join(selected_items) if selected_items else language[2]
-            return [
-                ('', f"{title}: {selected_text}\n"),
-                ('', language[3])
-            ]
+        result = [('', f"{title}:\n")]
+        for i, text in enumerate(texts):
+            style = '#ffff00' if selected[i] else ''
+            if i == pointer:
+                style += ' reverse'
+            result.append((style, f"  {text}\n"))
+        result.append(('', "空格: 选择/取消  方向键: 移动  Enter: 确认  ESC: 取消\n"))
+        return result
 
     control = FormattedTextControl(get_text)
     layout = Layout(Window(content=control))
-    style = Style.from_dict({
-        'reverse': 'reverse',
-    })
+    style = Style.from_dict({'reverse': 'reverse'})
     app = Application(
         layout=layout,
         key_bindings=kb,
         style=style,
-        full_screen=False
+        full_screen=False,
     )
-    app.run()
-    return [options[i][0] for i in range(len(options)) if selected[i]]
+    return app.run()
 
 
-def radio_selection(options: list, title: Optional[str] = language[0]) -> str:
-    data = {}
-    for option in options:
-        data[option[1]] = option[0]
-    result = questionary.select(title, list(data.keys()), instruction=language[4]).ask()
-    return data[result]
+def single_select(options: list, title: Optional[str] = None) -> Optional[str]:
+    """单选列表选择，返回选中的 key；ESC 取消时返回 None。
+
+    `options` 接受字符串列表（`["选项 a"]`）或 `(text, key)` 二元组列表。
+    """
+    normalized = _normalize_options(options)
+    if not normalized:
+        return None
+    title = title or "请选择"
+    result = questionary.select(
+        title, [text for text, _ in normalized],
+        instruction="(使用箭头选择，ESC 取消)").ask()
+    if result is None:
+        return None
+    for text, key in normalized:
+        if text == result:
+            return key
+    return None
 
 
-# Usage:
-# cfpackages.text_ui.radio_selection([("a", "input: a"), ("b", "input: b")])
-# cfpackages.text_ui.checkbox_selection([("a", "input: a"), ("b", "input: b")])
+def checkbox_selection(options: list, title: Optional[str] = None):
+    """已弃用，请改用 multi_select（参数顺序已变更为 `(text, key)`）。"""
+    warnings.warn(
+        "checkbox_selection 已弃用，请改用 multi_select",
+        DeprecationWarning, stacklevel=2)
+    flipped = [(text, key) for key, text in options]
+    return multi_select(flipped, title)
+
+
+def radio_selection(options: list, title: Optional[str] = None):
+    """已弃用，请改用 single_select（参数顺序已变更为 `(text, key)`）。"""
+    warnings.warn(
+        "radio_selection 已弃用，请改用 single_select",
+        DeprecationWarning, stacklevel=2)
+    flipped = [(text, key) for key, text in options]
+    return single_select(flipped, title)
+
+
+# 用法示例:
+# cfpackages.text_ui.multi_select(["选项 a", "选项 b"])
+# cfpackages.text_ui.multi_select([("选项 a", "a"), ("选项 b", "b")])
+# cfpackages.text_ui.single_select(["选项 a", "选项 b"])
+# cfpackages.text_ui.single_select([("选项 a", "a"), ("选项 b", "b")])

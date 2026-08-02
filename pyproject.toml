@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cfpackages"
-version = "0.1.4"
+version = "0.1.6"
 authors = [
     {name = "chengfeng3012", email = "chengfeng3012@163.com"},
 ]
@@ -19,3 +19,13 @@ dependencies = [
     "requests",
     "pywin32; sys_platform == 'win32'"
 ]
+
+[project.optional-dependencies]
+dev = [
+    "build",
+    "twine",
+    "questionary",
+]
+
+[tool.setuptools]
+packages = ["cfpackages"]
