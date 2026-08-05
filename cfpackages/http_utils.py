@@ -43,7 +43,10 @@ def generate_headers(raw_text: str, preserve_case: Optional[set] = None) -> dict
     支持三种输入格式：
     1. 完整 JSON 对象
     2. 缺少花括号的 JSON 片段
-    3. 每行一个 `Key: value` 的普通文本（浏览器开发者工具复制的格式）
+    3. 普通文本，同时支持两种行格式（可混用）：
+       - 每行一个 `Key: value`（浏览器开发者工具复制的格式）
+       - 每两行一组：key 行（无冒号）+ value 行
+       （value 行里即使带冒号，如 `Wed, 5 Aug 2026 21:30:51 +0800`，也不会被误拆）
     """
     raw_text = raw_text.strip()
     if not raw_text:
@@ -66,28 +69,40 @@ def generate_headers(raw_text: str, preserve_case: Optional[set] = None) -> dict
     except (json.JSONDecodeError, TypeError):
         pass
 
-    # 3) 逐行 `Key: value`
-    headers = {}
-    for line in raw_text.splitlines():
-        line = line.strip()
-        if ":" not in line:
-            continue
-        key, _, value = line.partition(":")
-        key = key.strip().strip('"')
-        value = value.strip()
-        if not key or not value:
-            continue
+    # 3) 逐行解析：`Key: value` 或两行式（key 行 + value 行）
+    def _unquote(value: str, key: str) -> str:
         if (key.lower() not in QUOTED_VALUE_KEYS
                 and len(value) >= 2
                 and value.startswith('"') and value.endswith('"')):
-            value = value[1:-1]
-        headers[format_key(key, preserve_case)] = value
+            return value[1:-1]
+        return value
+
+    headers = {}
+    pending_key = None
+    for line in raw_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if pending_key is not None:
+            # 两行式的 value 行：可能带冒号（如 `Wed, 5 Aug 2026 21:30:51 +0800`），
+            # 只要前面还有未配对的 key 行，就整行作为 value，不拆冒号
+            headers[format_key(pending_key, preserve_case)] = _unquote(line, pending_key)
+            pending_key = None
+        elif ":" in line:
+            key, _, value = line.partition(":")
+            key = key.strip().strip('"')
+            value = value.strip()
+            if key and value:
+                headers[format_key(key, preserve_case)] = _unquote(value, key)
+        else:
+            # 无冒号：作为 key 等待下一行作为 value（两行式）
+            pending_key = line
     return headers
 
 
 def get_headers_from_user_input(print_headers: bool = True) -> dict:
-    """交互式输入 headers：每行一个 `Key: value`，输入空行结束。"""
-    print("请粘贴你的 headers（每行一个 `Key: value`），空行结束输入:")
+    """交互式输入 headers：支持 `Key: value` 或 `Key` 换行 `value` 两行式，空行结束。"""
+    print("请粘贴你的 headers（支持 `Key: value` 每行，或 `Key` 换行 `value` 两行式），空行结束输入:")
     lines = []
     while True:
         line = input()
@@ -102,10 +117,11 @@ def get_headers_from_user_input(print_headers: bool = True) -> dict:
 
 
 def request(method: Literal["GET", "OPTIONS", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
-            url: str, retry: int = 0, delay: float = 3.0, **kwargs) -> requests.Response:
-    """发起请求，网络失败时最多自动重试 `retry` 次（默认不重试）。
+            url: str, retry: int = 3, delay: float = 3.0, **kwargs) -> requests.Response:
+    """发起请求，网络失败时最多自动重试 `retry` 次（默认 3 次，与 0.1.5 及更早版本一致）。
 
-    重试间隔固定为 `delay` 秒。重试耗尽后抛 ConnectionError。
+    传 `retry=0` 可禁用重试。重试间隔固定为 `delay` 秒。
+    重试耗尽后抛 ConnectionError。
     """
     for attempt in range(retry + 1):
         try:
